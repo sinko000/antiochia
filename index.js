@@ -1,9 +1,22 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
+const { Player } = require('discord.js-player');
 require('dotenv').config();
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+// Ses kanalı yetkilerini (GuildVoiceStates) intent'lere ekledik:
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildVoiceStates
+    ]
+});
+
+// Player örneği oluşturuyoruz
+const player = new Player(client);
+
+// YouTube / SoundCloud vb. kaynak ayıklayıcıları yüklüyoruz
+player.extractors.loadDefault();
 
 client.commands = new Collection();
 
@@ -19,7 +32,7 @@ for (const file of commandFiles) {
 	}
 }
 
-// 2. Event'leri (Etkinlikleri) Yükle
+// 2. Event'leri Yükle
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
@@ -33,7 +46,7 @@ for (const file of eventFiles) {
 	}
 }
 
-// 3. Slash Komutlarını Discord API'sine Otomatik Kaydet (Shell Gerektirmez)
+// 3. Slash Komutlarını Otomatik Kaydet
 const config = require('./config.json');
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
@@ -51,5 +64,4 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     }
 })();
 
-// 4. Bota Giriş Yap
 client.login(process.env.DISCORD_TOKEN);
