@@ -4,7 +4,6 @@ const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord
 const { Player } = require('discord-player');
 require('dotenv').config();
 
-// Ses kanalı yetkilerini (GuildVoiceStates) intent'lere ekledik:
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -12,56 +11,64 @@ const client = new Client({
     ]
 });
 
-// Player örneği oluşturuyoruz
+// 1. Müzik Oynatıcısını Tanımla
 const player = new Player(client);
-
-// YouTube / SoundCloud vb. kaynak ayıklayıcıları yüklüyoruz
-player.extractors.loadDefault();
 
 client.commands = new Collection();
 
-// 1. Komutları Yükle
+// 2. Komutları Yükle
 const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-for (const file of commandFiles) {
-	const filePath = path.join(commandsPath, file);
-	const command = require(filePath);
-	if ('data' in command && 'execute' in command) {
-		client.commands.set(command.data.name, command);
-	}
+if (fs.existsSync(commandsPath)) {
+    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+    for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, file);
+        const command = require(filePath);
+        if ('data' in command && 'execute' in command) {
+            client.commands.set(command.data.name, command);
+        }
+    }
 }
 
-// 2. Event'leri Yükle
+// 3. Etkinlikleri (Events) Yükle
 const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
-for (const file of eventFiles) {
-	const filePath = path.join(eventsPath, file);
-	const event = require(filePath);
-	if (event.once) {
-		client.once(event.name, (...args) => event.execute(...args));
-	} else {
-		client.on(event.name, (...args) => event.execute(...args));
-	}
+if (fs.existsSync(eventsPath)) {
+    const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+    for (const file of eventFiles) {
+        const filePath = path.join(eventsPath, file);
+        const event = require(filePath);
+        if (event.once) {
+            client.once(event.name, (...args) => event.execute(...args));
+        } else {
+            client.on(event.name, (...args) => event.execute(...args));
+        }
+    }
 }
 
-// 3. Slash Komutlarını Otomatik Kaydet
-const config = require('./config.json');
-const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-
-(async () => {
+// 4. Ana Başlatıcı Fonksiyon (Async)
+async function init() {
     try {
+        // Müzik ayıklayıcılarını (YouTube, Spotify vb.) güvenli şekilde yükle
+        await player.extractors.loadDefault();
+        console.log('Müzik ayıklayıcıları başarıyla yüklendi.');
+
+        // Slash Komutlarını Discord API'sine Otomatik Kaydet
+        const config = require('./config.json');
+        const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+
         const commands = Array.from(client.commands.values()).map(c => c.data.toJSON());
-        console.log('Slash komutları otomatik olarak Discord API\'sine yükleniyor...');
+        console.log('Slash komutları Discord API\'sine aktarılıyor...');
+        
         await rest.put(
             Routes.applicationCommands(config.clientId),
             { body: commands }
         );
         console.log('Slash komutları başarıyla kaydedildi!');
-    } catch (error) {
-        console.error('Komutlar yüklenirken hata oluştu:', error);
-    }
-})();
 
-client.login(process.env.DISCORD_TOKEN);
+        // Bota Giriş Yap
+        await client.login(process.env.DISCORD_TOKEN);
+    } catch (error) {
+        console.error('Bot başlatılırken kritik bir hata oluştu:', error);
+    }
+}
+
+init();
