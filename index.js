@@ -1,13 +1,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
 require('dotenv').config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.commands = new Collection();
 
-// Komutları Yükle
+// 1. Komutları Yükle
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
@@ -19,7 +19,7 @@ for (const file of commandFiles) {
 	}
 }
 
-// Event'leri Yükle
+// 2. Event'leri (Etkinlikleri) Yükle
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
 
@@ -33,4 +33,23 @@ for (const file of eventFiles) {
 	}
 }
 
+// 3. Slash Komutlarını Discord API'sine Otomatik Kaydet (Shell Gerektirmez)
+const config = require('./config.json');
+const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+
+(async () => {
+    try {
+        const commands = Array.from(client.commands.values()).map(c => c.data.toJSON());
+        console.log('Slash komutları otomatik olarak Discord API\'sine yükleniyor...');
+        await rest.put(
+            Routes.applicationCommands(config.clientId),
+            { body: commands }
+        );
+        console.log('Slash komutları başarıyla kaydedildi!');
+    } catch (error) {
+        console.error('Komutlar yüklenirken hata oluştu:', error);
+    }
+})();
+
+// 4. Bota Giriş Yap
 client.login(process.env.DISCORD_TOKEN);
