@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
 const { Player } = require('discord-player');
+const { DefaultExtractors } = require('@discord-player/extractor');
 require('dotenv').config();
 
 const client = new Client({
@@ -44,19 +45,19 @@ if (fs.existsSync(eventsPath)) {
     }
 }
 
-// 4. Ana Başlatıcı Fonksiyon (Async)
+// 4. Ana Başlatıcı
 async function init() {
     try {
-        // Müzik ayıklayıcılarını (YouTube, Spotify vb.) güvenli şekilde yükle
-        await player.extractors.loadDefault();
+        // Müzik çıkarıcılarını yükle
+        await player.extractors.loadMulti(DefaultExtractors);
         console.log('Müzik ayıklayıcıları başarıyla yüklendi.');
 
-        // Slash Komutlarını Discord API'sine Otomatik Kaydet
+        // Slash Komutlarını Kaydet
         const config = require('./config.json');
         const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
         const commands = Array.from(client.commands.values()).map(c => c.data.toJSON());
-        console.log('Slash komutları Discord API\'sine aktarılıyor...');
+        console.log('Slash komutları Discord API\'sine yükleniyor...');
         
         await rest.put(
             Routes.applicationCommands(config.clientId),
@@ -67,7 +68,7 @@ async function init() {
         // Bota Giriş Yap
         await client.login(process.env.DISCORD_TOKEN);
     } catch (error) {
-        console.error('Bot başlatılırken kritik bir hata oluştu:', error);
+        console.error('Bot başlatılırken bir hata oluştu:', error);
     }
 }
 
