@@ -2,7 +2,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
 const { Player } = require('discord-player');
-const { DefaultExtractors } = require('@discord-player/extractor');
 require('dotenv').config();
 
 const client = new Client({
@@ -30,7 +29,7 @@ if (fs.existsSync(commandsPath)) {
     }
 }
 
-// 3. Etkinlikleri (Events) Yükle
+// 3. Etkinlikleri Yükle
 const eventsPath = path.join(__dirname, 'events');
 if (fs.existsSync(eventsPath)) {
     const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
@@ -48,8 +47,8 @@ if (fs.existsSync(eventsPath)) {
 // 4. Ana Başlatıcı
 async function init() {
     try {
-        // Müzik çıkarıcılarını yükle
-        await player.extractors.loadMulti(DefaultExtractors);
+        // Varsayılan ayıklayıcıları (Default Extractors) yükle
+        await player.extractors.loadDefault();
         console.log('Müzik ayıklayıcıları başarıyla yüklendi.');
 
         // Slash Komutlarını Kaydet
