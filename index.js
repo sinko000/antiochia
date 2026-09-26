@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
-const { Player } = require('discord.js-player');
+const { Player } = require('discord-player');
 require('dotenv').config();
 
 // Ses kanalı yetkilerini (GuildVoiceStates) intent'lere ekledik:
